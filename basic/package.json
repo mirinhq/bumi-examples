@@ -8,8 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
-    "@bumidb/admin": "^0.0.1",
-    "@bumidb/client": "^0.0.1",
+    "@bumidb/admin": "*",
+    "@bumidb/client": "*",
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
