@@ -5,6 +5,8 @@ A minimal Next.js app that:
 1. Talks to bumi's management API from server routes (using a project API key) to **list/create tenants** and **mint per-page session tokens**.
 2. Renders the headless `<Table>` from `@bumidb/react` against a live session in `/editor/[tenantId]`.
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/mirinhq/bumi-examples/table-ui)
+
 ## Layout
 
 ```
