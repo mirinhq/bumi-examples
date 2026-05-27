@@ -41,5 +41,3 @@ pnpm install
 pnpm dev
 # open http://localhost:5179
 ```
-
-> **Note on local dev with `file:` deps:** like `examples/basic`, this example installs the bumidb packages via `file:`. Because the workspace packages' `package.json.main` points at `./src/index.ts` (for HMR in the monorepo) but their `files` field only ships `dist/`, a `pnpm install` here gets a partial copy. Real consumers installing from npm hit `publishConfig.exports` → `./dist/index.mjs` and don't see this. To exercise the example locally today, run `pnpm -r build` from the monorepo root first and configure a path alias, or move the example into a workspace package.
