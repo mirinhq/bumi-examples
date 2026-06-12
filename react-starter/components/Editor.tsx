@@ -2,26 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BumiClient } from "@bumidb/client";
-import {
-  BumiProvider,
-  Table,
-  useBumiClient,
-  useBumiTables,
-  useTableActions,
-} from "@bumidb/react";
+import { BumiProvider, Table, useSession, useTables } from "@bumidb/react";
 
 interface Props {
   tenantId: string;
 }
 
 export function Editor({ tenantId }: Props) {
-  const [client, setClient] = useState<BumiClient | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    let activeClient: BumiClient | null = null;
 
     (async () => {
       try {
@@ -35,11 +27,7 @@ export function Editor({ tenantId }: Props) {
           throw new Error(session.error ?? "createSession returned no token");
         }
         if (cancelled) return;
-        const c = new BumiClient({ sessionToken: session.token });
-        activeClient = c;
-        await c.ready();
-        if (cancelled) return;
-        setClient(c);
+        setSessionToken(session.token);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : String(err));
@@ -48,7 +36,6 @@ export function Editor({ tenantId }: Props) {
 
     return () => {
       cancelled = true;
-      activeClient?.destroy();
     };
   }, [tenantId]);
 
@@ -62,7 +49,7 @@ export function Editor({ tenantId }: Props) {
     );
   }
 
-  if (!client) {
+  if (!sessionToken) {
     return (
       <main style={{ maxWidth: 720, margin: "0 auto", padding: 24 }}>
         <Link href="/">← Back</Link>
@@ -72,20 +59,18 @@ export function Editor({ tenantId }: Props) {
   }
 
   return (
-    <BumiProvider client={client}>
+    <BumiProvider sessionToken={sessionToken}>
       <EditorInner />
     </BumiProvider>
   );
 }
 
 function EditorInner() {
-  const client = useBumiClient();
-  const tables = useBumiTables();
+  const client = useSession();
+  const tables = useTables();
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
-  const actions = useTableActions(activeTableId);
 
   useEffect(() => {
-    if (!tables) return;
     if (activeTableId && tables.some((t) => t.id === activeTableId)) return;
     setActiveTableId(tables[0]?.id ?? null);
   }, [tables, activeTableId]);
@@ -103,7 +88,7 @@ function EditorInner() {
     const name = window.prompt("Column name?", "new_column");
     if (!name) return;
     try {
-      await actions.addColumn({
+      await client.addColumn(activeTableId, {
         name,
         nullable: true,
         definition: { type: "text" },
@@ -116,7 +101,7 @@ function EditorInner() {
   async function onAddRow() {
     if (!activeTableId) return;
     try {
-      await actions.addRow();
+      await client.insertRow(activeTableId, {});
     } catch (err) {
       console.error("addRow failed", err);
     }
@@ -138,7 +123,7 @@ function EditorInner() {
         </Link>
 
         <div style={{ display: "flex", gap: 4, flex: 1, overflowX: "auto" }}>
-          {tables?.map((t) => (
+          {tables.map((t) => (
             <button
               key={t.id}
               onClick={() => setActiveTableId(t.id)}
@@ -183,9 +168,7 @@ function EditorInner() {
       </header>
 
       <section style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        {tables == null ? (
-          <Centered>Loading schema…</Centered>
-        ) : tables.length === 0 ? (
+        {tables.length === 0 ? (
           <Centered>
             <p>No tables yet.</p>
             <button onClick={onCreateTable}>Create your first table</button>
